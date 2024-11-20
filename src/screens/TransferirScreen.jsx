@@ -1,166 +1,161 @@
-import React, { useState, useEffect } from "react";
-import { Surface, Text, Button, TextInput } from "react-native-paper";
-import { View, StyleSheet } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useState } from "react";
+import { View, StyleSheet, TextInput, KeyboardAvoidingView, Text, Image } from "react-native";
+import { Button, Surface } from "react-native-paper";
 
 export default function TransferirScreen({ navigation }) {
-  const [pixAmount, setPixAmount] = useState("");
-  const [description, setDescription] = useState(""); // Novo campo
-  const [transactionStatus, setTransactionStatus] = useState(null);
-  const [balance, setBalance] = useState(0);
+  const [amount, setAmount] = useState(""); // Valor da transação
+  const [description, setDescription] = useState(""); // Descrição da transação
+  const [transactionSuccess, setTransactionSuccess] = useState(false); // Controle de sucesso da transação
 
-  useEffect(() => {
-    const loadBalance = async () => {
-      try {
-        const storedBalance = await AsyncStorage.getItem("balance");
-        if (storedBalance !== null) {
-          setBalance(parseFloat(storedBalance));
-        } else {
-          setBalance(1356.0); // Valor padrão inicial
-        }
-      } catch (error) {
-        console.error("Erro ao carregar o saldo:", error);
-      }
-    };
-
-    loadBalance();
-  }, []);
-
-  const registerTransaction = async (amount, type) => {
-    try {
-      const transaction = {
-        id: new Date().getTime().toString(),
-        type,
-        amount,
-        description, // Adiciona descrição
-        date: new Date().toLocaleString(),
-      };
-
-      const existingTransactions = await AsyncStorage.getItem("transactions");
-      let transactions = existingTransactions
-        ? JSON.parse(existingTransactions)
-        : [];
-
-      transactions.push(transaction);
-
-      await AsyncStorage.setItem("transactions", JSON.stringify(transactions));
-    } catch (error) {
-      console.error("Erro ao registrar a transação:", error);
-    }
-  };
-
-  const handlePixTransaction = async () => {
-    const amountValue = parseFloat(pixAmount);
-    if (!isNaN(amountValue) && amountValue > 0) {
-      if (amountValue <= balance) {
-        try {
-          const newBalance = balance - amountValue;
-          setTransactionStatus("Pix enviado com sucesso!");
-          await registerTransaction(amountValue, "send");
-          await AsyncStorage.setItem("balance", newBalance.toFixed(2));
-          setBalance(newBalance);
-          setPixAmount("");
-          setDescription(""); // Limpa descrição
-
-          setTimeout(() => {
-            navigation.navigate("BankScreen");
-          }, 1000);
-        } catch (error) {
-          setTransactionStatus("Erro ao atualizar o saldo.");
-          console.error("Erro ao salvar o saldo:", error);
-        }
-      } else {
-        setTransactionStatus("Erro: Saldo insuficiente para enviar.");
-      }
+  const handleSend = () => {
+    if (amount && parseFloat(amount) > 0 && description) {
+      setTransactionSuccess(true); // Transação realizada com sucesso
     } else {
-      setTransactionStatus("Erro: Verifique o valor inserido.");
+      alert("Por favor, insira um valor válido e uma descrição.");
     }
   };
 
-  return (
-    <Surface style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Pix</Text>
-      </View>
-      <View style={styles.inputContainer}>
-        <TextInput
-          label="Valor"
-          mode="outlined"
-          keyboardType="numeric"
-          value={pixAmount}
-          onChangeText={setPixAmount}
-          style={styles.input}
+  if (transactionSuccess) {
+    return (
+      <Surface style={styles.successContainer}>
+        {/* Ícone de sucesso */}
+        <Image
+          source={{
+            uri: "https://cdn-icons-png.flaticon.com/512/845/845646.png", // URL do ícone de sucesso
+          }}
+          style={styles.successIcon}
         />
-        <TextInput
-          label="Descrição"
-          mode="outlined"
-          value={description}
-          onChangeText={setDescription}
-          style={styles.input}
-        />
+        <Text style={styles.successTitle}>Transferência Realizada!</Text>
+        <Text style={styles.successMessage}>Transação concluída com sucesso.</Text>
         <Button
           mode="contained"
-          onPress={handlePixTransaction}
-          style={styles.button}
-        >
-          Enviar Pix
-        </Button>
-        {transactionStatus && (
-          <Text style={styles.status}>{transactionStatus}</Text>
-        )}
-      </View>
-      <View style={styles.balanceContainer}>
-        <Text style={styles.balanceLabel}>Saldo Atual:</Text>
-        <Text style={styles.balanceAmount}>R$ {balance.toFixed(2)}</Text>
-      </View>
-      <View style={styles.bottomActions}>
-        <Button
-          mode="contained"
-          onPress={() => navigation.goBack()}
-          style={styles.bottomButton}
+          onPress={() => navigation.navigate("BankScreen")}
+          style={styles.successButton}
+          labelStyle={styles.successButtonText}
         >
           Voltar
         </Button>
-      </View>
-    </Surface>
+      </Surface>
+    );
+  }
+
+  return (
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
+      {/* Exibição do valor */}
+      <Text style={styles.amountText}>
+        {amount ? `RS ${parseFloat(amount).toFixed(2)}` : "RS 0,00"}
+      </Text>
+
+      {/* Campo de valor (editável diretamente) */}
+      <TextInput
+        style={styles.amountInput}
+        placeholder="Digite o valor"
+        placeholderTextColor="#ccc"
+        keyboardType="numeric"
+        value={amount}
+        onChangeText={setAmount}
+      />
+
+      {/* Campo de descrição */}
+      <TextInput
+        placeholder="Digite a descrição"
+        value={description}
+        onChangeText={setDescription}
+        style={styles.descriptionInput}
+        placeholderTextColor="#ccc"
+      />
+
+      {/* Botão de envio */}
+      <Button
+        mode="contained"
+        onPress={handleSend}
+        style={styles.sendButton}
+        labelStyle={styles.sendButtonText}
+      >
+        Send
+      </Button>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
-  header: {
-    backgroundColor: "#a445bd",
+  container: {
+    flex: 1,
+    backgroundColor: "#f3f4f6", // Cor base
     padding: 20,
-    borderRadius: 10,
-    marginBottom: 20,
-    alignItems: "center",
+    justifyContent: "space-between",
   },
-  headerText: { color: "#fff", fontSize: 22, fontWeight: "bold" },
-  inputContainer: { flex: 1, justifyContent: "center", paddingHorizontal: 10 },
-  input: { marginBottom: 15, backgroundColor: "#f5f5f5" },
-  button: {
-    backgroundColor: "#a445bd",
-    height: 50,
-    borderRadius: 8,
-    marginTop: 15,
-  },
-  status: {
-    marginTop: 20,
-    fontSize: 16,
-    color: "#d32f2f",
+  amountText: {
+    fontSize: 45, // Fonte maior
+    fontWeight: "bold",
+    color: "#a767c6",
     textAlign: "center",
+    marginTop: 100,
   },
-  balanceContainer: {
-    padding: 20,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    marginVertical: 20,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
+  amountInput: {
+    fontSize: 16, // Fonte menor no input
+    height: 35, // Diminui a altura do campo
+    borderBottomWidth: 0.5, // Linha inferior mais fina
+    borderBottomColor: "#a767c6", // Cor da linha inferior
+    textAlign: "center",
+    marginVertical: 8, // Menos espaço entre os campos
+    color: "#a767c6",
+    width: "70%", // Reduzindo o comprimento da linha para 70% da largura do contêiner
+    marginLeft: "auto", // Centraliza horizontalmente
+    marginRight: "auto", // Centraliza horizontalmente
+  },
+  descriptionInput: {
+    fontSize: 16, // Fonte menor no input
+    height: 35, // Diminui a altura do campo
+    borderBottomWidth: 0.5, // Linha inferior mais fina
+    borderBottomColor: "#a767c6", // Cor da linha inferior
+    textAlign: "center",
+    marginVertical: 8, // Menos espaço entre os campos
+    color: "#a767c6",
+    width: "70%", // Reduzindo o comprimento da linha para 70% da largura do contêiner
+    marginLeft: "auto", // Centraliza horizontalmente
+    marginRight: "auto", // Centraliza horizontalmente
+  },
+  sendButton: {
+    backgroundColor: "#a767c6",
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  sendButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  successContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#f3f4f6",
   },
-  balanceLabel: { color: "#444", fontSize: 16, marginBottom: 5 },
-  balanceAmount: { color: "#a445bd", fontSize: 24, fontWeight: "bold" },
-  bottomActions: { marginTop: 20, alignItems: "center" },
-  bottomButton: { backgroundColor: "#a445bd", borderRadius: 8, height: 50 },
+  successIcon: {
+    width: 100,
+    height: 100,
+    marginBottom: 30,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#a767c6",
+    marginBottom: 10,
+  },
+  successMessage: {
+    fontSize: 16,
+    color: "#5a2b84",
+    marginBottom: 30,
+  },
+  successButton: {
+    backgroundColor: "#a767c6",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  successButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
 });

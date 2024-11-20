@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, FlatList, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export default function CaixaScreen({ navigation }) {
   const [boxes, setBoxes] = useState([]);
@@ -66,9 +67,13 @@ export default function CaixaScreen({ navigation }) {
           renderItem={renderItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.gridContainer}
+          numColumns={2}
         />
       ) : (
-        <Text style={styles.noBoxesText}>Nenhuma caixinha encontrada.</Text>
+        <View style={styles.emptyState}>
+          <Icon name="box" size={50} color="#a445bd" />
+          <Text style={styles.noBoxesText}>Nenhuma caixinha encontrada.</Text>
+        </View>
       )}
       {renderSelectedBox()}
       <TouchableOpacity
@@ -85,17 +90,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f4f4f4',
   },
   boxButton: {
+    flex: 1,
+    margin: 5,
     backgroundColor: '#a445bd',
-    padding: 30,
-    borderRadius: 8,
-    marginBottom: 15,
-    marginHorizontal: 10,
+    padding: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
   boxText: {
     color: '#fff',
@@ -107,7 +116,7 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 16,
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 10,
   },
   selectedBoxDetails: {
     marginTop: 20,
@@ -134,16 +143,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    paddingHorizontal: 5,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   createBoxButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
     backgroundColor: '#a445bd',
     padding: 15,
     borderRadius: 8,
-    marginTop: 20,
     alignItems: 'center',
+    elevation: 5,
   },
   createBoxText: {
     color: '#fff',
